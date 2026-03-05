@@ -5,6 +5,17 @@ This project explores how AI agents can execute real tasks using tools and local
 
 The experiment was built using a fully local stack running on macOS.
 
+## Demo
+
+### Local LLM Server
+![LM Studio](lm-studio-server.png)
+
+### AI Agent Executing Tools
+![OpenClaw Agent](openclaw-agent-ui.png)
+
+### Smoke Test Result
+![Smoke Test](agent-smoke-test.png)
+
 ## Stack
 - LM Studio (local OpenAI-compatible inference)
 - OpenClaw (AI agent gateway)
