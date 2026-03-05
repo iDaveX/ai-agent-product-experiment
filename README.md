@@ -1,4 +1,4 @@
-# AI Agent Product Experiment
+# Experiment: building a local AI agent that executes real system tools using a local LLM.
 
 ## Overview
 This project explores how AI agents can execute real tasks using tools and local LLMs.
