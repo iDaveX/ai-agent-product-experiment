@@ -1,82 +1,86 @@
-# AI Agent Product Experiment
+# AI Research Assistant (pet‑project): локальный AI‑агент с инструментами + интерфейс в Telegram
 
-Experiment: building a local AI agent that executes real system tools using a local LLM.
+Я собрал локальную систему “AI‑агент + инструменты”, которая не просто отвечает текстом, а **выполняет действия** (веб‑запросы, работа с файлами/командами, поиск по заметкам, разбор YouTube) и возвращает проверяемый результат. Основной интерфейс — **Telegram** (удобно с телефона).
 
----
-
-## Overview
-
-This project explores how AI agents can execute real tasks using tools and local LLMs.
-
-The experiment was built using a fully local stack running on macOS.
+Цель репозитория — показать **продуктовое мышление + системный подход**: от задачи и UX до архитектуры, ограничений и устойчивости интеграций.
 
 ---
 
-## Stack
-
-- LM Studio (local OpenAI-compatible inference)
-- OpenClaw (AI agent gateway)
-- Local LLM: Qwen2.5-Coder-3B-Instruct-MLX
-- Docker
+## Коротко (TL;DR)
+- **Проблема:** продуктовые команды тратят время на рутину “собрать источники → вытащить главное → структурировать → сохранить”, плюс постоянные переключения между сервисами.
+- **Решение:** Telegram → bridge → gateway → агент → tools → ответ обратно в Telegram.
+- **Ценность:** экономит время на повседневных исследовательских микро‑задачах и снижает фрикцию (особенно “на ходу” с телефона).
 
 ---
 
-## Architecture
-
-LM Studio runs a local LLM and exposes an OpenAI-compatible API.
-
-OpenClaw Gateway connects to the LLM via this API and enables the AI agent to call tools.
-
-Tools are executed inside a workspace where the agent can:
-
-- create files
-- run shell commands
-- return execution results
+## Зачем я это сделал
+1) Проверить гипотезу: агент с tool calling даёт больше пользы, чем “просто чат”, на задачах исследований/анализа контента.  
+2) Потрогать реальные продуктовые нюансы: **TTV**, ожидание ответа (“думаю…”), длинные ответы, отмена, устойчивость.  
+3) Сделать mobile‑first интерфейс (Telegram) к полностью локальному стеку (приватность/контроль).
 
 ---
 
-## Demo
+## Какую проблему решает
+- Быстро получить структурированную выжимку по ссылке/теме/видео
+- Уменьшить переключение между сервисами (браузер → заметки → YouTube → чат)
+- Иметь единое место, где результаты можно быстро найти повторно (knowledge base)
 
-### Local LLM Server
+---
+
+## Использую ли я это реально
+Да: использую как “первую точку входа” с телефона для быстрых продуктовых исследований.
+
+---
+
+## Сколько времени экономит
+Обычно **5–20 минут на один исследовательский запрос** (не нужно открывать ноутбук, копировать ссылки, собирать заметки вручную).
+
+---
+
+## Ключевые сценарии (в Telegram)
+- “2–3 новости AI за сутки со ссылками” → `/news`
+- “Кратко по странице и ключевая мысль” → `/summarize <url>`
+- “Разбери YouTube и сделай summary” → `/yt <url>`
+- “Найди в моих заметках/конспектах” → `/kb <query>`
+- Управление глубиной ответа → `/short`, `/normal`, `/deep`
+- Отмена долгого запроса → `/cancel`
+
+---
+
+## Архитектура (текущая)
+**Telegram (телефон)** → `telegram-bridge` → **WebSocket** → `openclaw-gateway` → **Agent** → **Tools** → ответ → Telegram
+
+Ключевое решение: bridge общается с gateway по WS с токен‑авторизацией (без `docker exec` и без доступа к Docker socket) — быстрее и безопаснее.
+
+---
+
+## Инструменты (tools)
+- `knowledge_search` — поиск по локальной базе заметок (`knowledge/`)
+- `youtube_summary` — извлечение транскрипта YouTube для последующего summary
+- Базовые tool‑вызовы агента (веб‑доступ/файлы/команды) через gateway
+
+---
+
+## Реальный инженерный нюанс (gotcha)
+Telegram long polling (`getUpdates`) допускает **только один** активный poller на один bot token.  
+Если два процесса поллят один токен — возникает `409 Conflict`. Решение: один poller на токен (один канал доставки).
+
+---
+
+## Моя зона ответственности (как продукт)
+- Сформулировал проблему и сценарии (jobs-to-be-done) для продуктовых исследований
+- Спроектировал UX в мессенджере: “думаю… → редактирование в финальный ответ”, отмена, режимы ответа
+- Добавил инструменты под реальные кейсы (knowledge base, YouTube)
+- Приземлил это в рабочую архитектуру “агент + tools”, чтобы результат был воспроизводимым
+
+---
+
+## Демо
+### Локальный LLM сервер
 ![LM Studio](lm-studio-server.png)
 
-### AI Agent Executing Tools
+### Агент выполняет инструменты
 ![OpenClaw Agent](openclaw-agent-ui.png)
 
-### Smoke Test Result
+### Smoke test
 ![Smoke Test](agent-smoke-test.png)
-
----
-
-## Experiment
-
-A smoke test was executed where the AI agent:
-
-1. Created a file  
-2. Executed system commands  
-3. Returned results from tool execution  
-
-Example task executed by the agent:
-1. create file hello_final.txt
-2. run ls -la
-3. run cat hello_final.txt
-
----
-
-## Result
-
-The agent successfully executed tool calls and produced real system outputs.
-
-This experiment demonstrates how autonomous agents can interact with real environments through structured tools.
-
----
-
-## Learnings
-
-Running AI agents locally surfaced several practical challenges:
-
-- context window limits affect tool execution
-- smaller models can be more stable for agent workflows
-- networking between Docker containers and local APIs requires careful configuration
-
-This experiment helped explore how agent-based systems interact with real environments.
